@@ -3,10 +3,14 @@ import User from "../models/User.js";
 import { generateToken, hashPassword, verifyHashPassword } from "../utils/authUtils.js";
 
 export const registerUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
 
     const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedName = name?.trim();
 
+    if (!normalizedName) {
+        return res.status(400).json({ message: "Please enter your name!" });
+    }
     if (!normalizedEmail || !validator.isEmail(normalizedEmail)) {
         return res.status(400).json({ message: "Please enter a valid email!" });
     }
@@ -23,6 +27,7 @@ export const registerUser = async (req, res) => {
         const hashedPassword = await hashPassword(password);
 
         await User.create({
+            name: normalizedName,
             email: normalizedEmail,
             password: hashedPassword
         });
