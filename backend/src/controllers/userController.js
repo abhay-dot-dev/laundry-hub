@@ -14,11 +14,14 @@ export const userProfile = async (req, res) => {
             message: "User profile fetched successfully!",
             user: {
                 id: user._id,
-                email: user.email
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                address: user.address,
             }
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({message: "Something went wrong!"})
+        res.status(500).json({ message: "Something went wrong!" })
     }
 }
