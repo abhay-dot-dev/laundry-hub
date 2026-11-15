@@ -1,0 +1,67 @@
+import User from "../models/User.js";
+import Orders from "../models/Order.js";
+import servicesData from "../data/services.js";
+
+export const createOrder = async (req, res) => {
+    const id = req.user.userId;
+    const { services, address, phone } = req.body;
+
+    console.log("Request body:", req.body);
+    console.log("Services:", services);
+
+    if (!Array.isArray(services) || services.length === 0) {
+        return res.status(400).json({ message: "Plase select at least one service" });
+    }
+
+    if (!address?.trim() || !phone?.trim()) {
+    return res.status(400).json({
+        message: "Address and phone are required!"
+    });
+}
+
+    try {
+        const selectedServices = services.map((service) => {
+            const selectedService = servicesData.find(
+                (item) => item.name === service.serviceName
+            );
+            if (!selectedService) {
+                return null;
+            }
+
+            return {
+                serviceName: selectedService.name,
+                servicePrice: selectedService.price,
+            }
+        });
+
+        if (selectedServices.includes(null)) {
+            return res.status(400).json({ message: "One or more selected services are invalid!" });
+        }
+
+        const total = selectedServices.reduce(
+            (sum, service) => sum + service.servicePrice,
+            0
+        );
+
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(401).json({ message: "No user found!" })
+        }
+
+        const order = await Orders.create({
+            user: user._id,
+            services: selectedServices,
+            total,
+            name: user.name,
+            email: user.email,
+            address,
+            phone
+        });
+
+        res.status(201).json({ message: "Orders created successfully!", order });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Something went wrong!" })
+    }
+}
