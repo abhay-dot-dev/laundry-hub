@@ -82,3 +82,28 @@ export const getOrders = async (req, res) => {
         res.status(500).json({ message: "Unable to load orders!" })
     }
 }
+
+export const getOrderById = async (req, res) => {
+    const currentUserId = req.user.userId;
+    const { id } = req.params;
+
+    try {
+        const order = await Orders.findById(id);
+        if (!order) {
+            return res.status(404).json({
+                message: "No order found!",
+                order: []
+            });
+        }
+
+        if (order.user.equals(currentUserId)) {
+            res.status(200).json({ message: "Order fetched successfully!", order: order });
+        } else {
+            res.status(403).json({ message: "Invalid user!" })
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Unable to fetch order!" })
+    }
+}
