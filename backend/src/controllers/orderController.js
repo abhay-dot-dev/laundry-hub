@@ -6,18 +6,15 @@ export const createOrder = async (req, res) => {
     const id = req.user.userId;
     const { services, address, phone } = req.body;
 
-    console.log("Request body:", req.body);
-    console.log("Services:", services);
-
     if (!Array.isArray(services) || services.length === 0) {
         return res.status(400).json({ message: "Plase select at least one service" });
     }
 
     if (!address?.trim() || !phone?.trim()) {
-    return res.status(400).json({
-        message: "Address and phone are required!"
-    });
-}
+        return res.status(400).json({
+            message: "Address and phone are required!"
+        });
+    }
 
     try {
         const selectedServices = services.map((service) => {
@@ -63,5 +60,25 @@ export const createOrder = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Something went wrong!" })
+    }
+}
+
+export const getOrders = async (req, res) => {
+    const id = req.user.userId;
+
+    try {
+        const orders = await Orders.find({ user: id });
+
+        if (orders.length === 0) {
+            return res.status(400).json({
+                message: "No orders found!",
+                orders: []
+            });
+        }
+
+        res.status(200).json({ message: "Orders fetched successfully!", orders: orders });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Unable to load orders!" })
     }
 }
