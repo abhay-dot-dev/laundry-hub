@@ -107,3 +107,32 @@ export const getOrderById = async (req, res) => {
         res.status(500).json({ message: "Unable to fetch order!" })
     }
 }
+
+export const cancelOrder = async (req, res) => {
+    const currentUserId = req.user.userId;
+    const { id } = req.params;
+
+    try {
+        const order = await Orders.findById(id);
+        if (!order) {
+            return res.status(404).json({ message: "No order found!" });
+        }
+
+        if (!order.user.equals(currentUserId)) {
+            return res.status(404).json({ message: "No order found!" });
+        }
+
+        if(order.status === 'Completed' || order.status === 'Cancelled') {
+            return res.status(400).json({message: `Order cannot be cancelled because its status is ${order.status}!`});
+        }
+        
+        order.status = 'Cancelled';
+        await order.save();
+
+        res.status(200).json({message: 'Order cancelled!', order: order});
+        
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Something went wrong!" });
+    }
+}
