@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Orders from "../models/Order.js";
 import servicesData from "../data/services.js";
+import mongoose from "mongoose";
 
 export const createOrder = async (req, res) => {
     const id = req.user.userId;
@@ -87,8 +88,12 @@ export const getOrderById = async (req, res) => {
     const currentUserId = req.user.userId;
     const { id } = req.params;
 
+    if (!mongoose.isObjectIdOrHexString(id)) {
+        return res.status(400).json({ message: "Invalid order ID!" });
+    }
+
     try {
-        const order = await Orders.findById(id);
+        const order = await Orders.findOne({ _id: id, user: currentUserId });
         if (!order) {
             return res.status(404).json({
                 message: "No order found!",
@@ -96,11 +101,7 @@ export const getOrderById = async (req, res) => {
             });
         }
 
-        if (order.user.equals(currentUserId)) {
-            res.status(200).json({ message: "Order fetched successfully!", order: order });
-        } else {
-            res.status(403).json({ message: "Invalid user!" })
-        }
+        res.status(200).json({ message: "Order fetched successfully!", order: order });
 
     } catch (error) {
         console.error(error);
@@ -112,25 +113,25 @@ export const cancelOrder = async (req, res) => {
     const currentUserId = req.user.userId;
     const { id } = req.params;
 
+    if (!mongoose.isObjectIdOrHexString(id)) {
+        return res.status(400).json({ message: "Invalid order ID!" });
+    }
+
     try {
-        const order = await Orders.findById(id);
+        const order = await Orders.findOne({ _id: id, user: currentUserId });
         if (!order) {
             return res.status(404).json({ message: "No order found!" });
         }
 
-        if (!order.user.equals(currentUserId)) {
-            return res.status(404).json({ message: "No order found!" });
+        if (order.status === 'Completed' || order.status === 'Cancelled') {
+            return res.status(400).json({ message: `Order cannot be cancelled because its status is ${order.status}!` });
         }
 
-        if(order.status === 'Completed' || order.status === 'Cancelled') {
-            return res.status(400).json({message: `Order cannot be cancelled because its status is ${order.status}!`});
-        }
-        
         order.status = 'Cancelled';
         await order.save();
 
-        res.status(200).json({message: 'Order cancelled!', order: order});
-        
+        res.status(200).json({ message: 'Order cancelled!', order: order });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Something went wrong!" });
