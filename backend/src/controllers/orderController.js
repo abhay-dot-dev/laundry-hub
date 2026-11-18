@@ -1,26 +1,22 @@
 import User from "../models/User.js";
 import Orders from "../models/Order.js";
 import servicesData from "../data/services.js";
-import mongoose from "mongoose";
+import { validateOrder } from "../utils/orderValidation.js";
 
 export const createOrder = async (req, res) => {
     const id = req.user.userId;
     const { services, address, phone } = req.body;
 
-    if (!Array.isArray(services) || services.length === 0) {
-        return res.status(400).json({ message: "Plase select at least one service" });
-    }
+    const validationError = validateOrder(services, address, phone);
 
-    if (!address?.trim() || !phone?.trim()) {
-        return res.status(400).json({
-            message: "Address and phone are required!"
-        });
+    if (validationError) {
+        return res.status(400).json({ message: validationError });
     }
 
     try {
         const selectedServices = services.map((service) => {
             const selectedService = servicesData.find(
-                (item) => item.name === service.serviceName
+                (item) => item.name.toLowerCase() === service.serviceName.trim().toLowerCase()
             );
             if (!selectedService) {
                 return null;
@@ -53,8 +49,8 @@ export const createOrder = async (req, res) => {
             total,
             name: user.name,
             email: user.email,
-            address,
-            phone
+            address: address.trim(),
+            phone: phone.trim()
         });
 
         res.status(201).json({ message: "Orders created successfully!", order });
